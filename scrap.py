@@ -9,16 +9,16 @@ from multiprocessing import cpu_count , Process
 
 def getDriver():
         driver_name = ''
-        driver_names = [x for x in pyodbc.drivers() if x.endswith(' for SQL Server')]
-        if driver_names:
-            driver_name = driver_names[0]
-        if driver_name:
-            return driver_name  
+        #driver_names = [x for x in pyodbc.drivers() if x.endswith(' for SQL Server')]
+        #if driver_names:
+        #    driver_name = driver_names[0]
+        #if driver_name:
+        #    return driver_name  
 cnxn_str = ("Driver=getDriver();""Server=51.91.214.115;""Database=DT_EntryPoint;""UID=govwise01;""PWD=richMu$ic71;")
 
 #cnxn = mysql.connector.connect(host='localhost',database='test',user='root')
-cnxn = pyodbc.connect(Driver=getDriver(),Server="51.91.214.115",Database="DT_EntryPoint",UID="govwise01",PWD="richMu$ic71",TrustServerCertificate="yes")
-cursor = cnxn.cursor()
+#cnxn = pyodbc.connect(Driver=getDriver(),Server="51.91.214.115",Database="DT_EntryPoint",UID="govwise01",PWD="richMu$ic71",TrustServerCertificate="yes")
+#cursor = cnxn.cursor()
 
 @lru_cache(maxsize=None)
 def getListValue(listURL, code):
