@@ -3,8 +3,8 @@ from sqlite3 import DatabaseError
 from functools import lru_cache
 import requests
 import xmltodict
-import pyodbc 
-import mysql.connector
+#import pyodbc 
+#import mysql.connector
 from multiprocessing import cpu_count , Process
 
 def getDriver():
