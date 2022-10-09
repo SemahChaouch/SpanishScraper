@@ -169,17 +169,17 @@ if __name__ == '__main__':
         while (z<(len(data["feed"]["entry"]))):
             p1=Process(target=addTender,args=(data["feed"]["entry"][z],))
             p2=Process(target=addTender,args=(data["feed"]["entry"][z+1],))
-            p3=Process(target=addTender,args=(data["feed"]["entry"][z+2],))
-            p4=Process(target=addTender,args=(data["feed"]["entry"][z+3],))
+            #p4=Process(target=addTender,args=(data["feed"]["entry"][z+3],))
+            #p3=Process(target=addTender,args=(data["feed"]["entry"][z+2],))
             p1.start()
             p2.start()
-            p3.start()
-            p4.start()
+            #p3.start()
+            #p4.start()
 
             p1.join()
             p2.join()
-            p3.join()
-            p4.join()
+            #p3.join()
+            #p4.join()
             z=z+4
         for i in range(len(data['feed']['link'])):
             if data['feed']['link'][i]['@rel']=='next':
