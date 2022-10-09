@@ -170,7 +170,7 @@ if __name__ == '__main__':
         data = xmltodict.parse(response.content)
         while (z<(len(data["feed"]["entry"]))):
             p1=Process(target=addTender,args=(data["feed"]["entry"][z],))
-            if z+1 > len(data["feed"]["entry"]) :
+            if z+1 < len(data["feed"]["entry"]) :
                 p2=Process(target=addTender,args=(data["feed"]["entry"][z+1],))
             #if z+2 > len(data["feed"]["entry"]) :
                 #p3=Process(target=addTender,args=(data["feed"]["entry"][z+2],))
