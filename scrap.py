@@ -1,3 +1,4 @@
+from logging import exception
 from pickle import NONE
 from sqlite3 import DatabaseError
 from functools import lru_cache
@@ -139,7 +140,8 @@ def addTender(currentItem):
 
     #DEADLINE
     if 'cac:TenderSubmissionDeadlinePeriod' in currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderingProcess']:
-        databaseRecord["DEADLINE"]=currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderingProcess']['cac:TenderSubmissionDeadlinePeriod']['cbc:EndDate']
+        if 'cbc:EndDate' in currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderingProcess']['cac:TenderSubmissionDeadlinePeriod']:
+            databaseRecord["DEADLINE"]=currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderingProcess']['cac:TenderSubmissionDeadlinePeriod']['cbc:EndDate']
     else :
         databaseRecord["DEADLINE"]=''
     #LEGALDOCREFERENCE
@@ -168,19 +170,23 @@ if __name__ == '__main__':
         data = xmltodict.parse(response.content)
         while (z<(len(data["feed"]["entry"]))):
             p1=Process(target=addTender,args=(data["feed"]["entry"][z],))
-            p2=Process(target=addTender,args=(data["feed"]["entry"][z+1],))
-            #p4=Process(target=addTender,args=(data["feed"]["entry"][z+3],))
-            #p3=Process(target=addTender,args=(data["feed"]["entry"][z+2],))
+            if z+1 > len(data["feed"]["entry"]) :
+                p2=Process(target=addTender,args=(data["feed"]["entry"][z+1],))
+            #if z+2 > len(data["feed"]["entry"]) :
+                #p3=Process(target=addTender,args=(data["feed"]["entry"][z+2],))
+            #if z+3 > len(data["feed"]["entry"]) :   
+                #p4=Process(target=addTender,args=(data["feed"]["entry"][z+3],))
+
             p1.start()
-            p2.start()
-            #p3.start()
-            #p4.start()
+            if p2 : p2.start()
+            #if p3 : p3.start()
+            #if p4 : p4.start()
 
             p1.join()
-            p2.join()
-            #p3.join()
-            #p4.join()
-            z=z+4
+            if p2 : p2.join()
+            #if p3 : p3.join()
+            #if p4 : p4.join()
+            z=z+2
         for i in range(len(data['feed']['link'])):
             if data['feed']['link'][i]['@rel']=='next':
                 url=data['feed']['link'][i]['@href']
