@@ -212,6 +212,7 @@ if __name__ == '__main__':
     url = "https://contrataciondelestado.es/sindicacion/sindicacion_643/licitacionesPerfilesContratanteCompleto3.atom"
     z=0
     while url :
+        print('--------------------- NEW URL ----------------------')
         response = requests.get(url)
         data = xmltodict.parse(response.content)
         entries=data["feed"]["entry"]
