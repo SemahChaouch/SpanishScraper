@@ -1,19 +1,27 @@
-from sqlite3 import DatabaseError
 import requests
 import time
-import pyodbc 
+from functools import lru_cache
 import xmltodict
 from multiprocessing import cpu_count , Process
-def count(n):
-    count=0
-    while count<n :
-        print(count)
-        count = count +1
-tab=[1,2,3,4,5,6,7,8]
-def test(t,i):
-    print(t[i])
+@lru_cache(maxsize=None)
+def getListValue(listURL, code):
+    listResponse = requests.get(listURL)
+    listDict = xmltodict.parse(listResponse.content)
+    i = 0
+    while i < len(listDict['gc:CodeList']['SimpleCodeList']['Row'] ):
+        currentObj = listDict['gc:CodeList']['SimpleCodeList']['Row'][i]
+    if(currentObj['Value'][0]['SimpleValue'] == code):
+        return currentObj['Value'][1]['SimpleValue']
+    i += 1
 url = "https://contrataciondelestado.es/sindicacion/sindicacion_643/licitacionesPerfilesContratanteCompleto3.atom"
+response = requests.get(url)
+data = xmltodict.parse(response.content)
+for i in range(len(data["feed"]["entry"])):
+    currentItem=data["feed"]["entry"][i]
+    a=getListValue(currentItem['cac-place-ext:ContractFolderStatus']['cbc-place-ext:ContractFolderStatusCode']['@listURI'],currentItem['cac-place-ext:ContractFolderStatus']['cbc-place-ext:ContractFolderStatusCode']['#text']) 
 
-    
+            
+
+
     
 
