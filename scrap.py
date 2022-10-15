@@ -3,12 +3,11 @@ from functools import lru_cache
 from re import T
 import requests
 import xmltodict
-from dbutils.sqlserverconn import SQLServerConn
 from multiprocessing import Process
 
-db=SQLServerConn(dbname='DT_EntryPoint')
-cnxn= db.connection
-cursor = cnxn.cursor()
+#db=SQLServerConn(dbname='DT_EntryPoint')
+#cnxn= db.connection
+#cursor = cnxn.cursor()
 
 @lru_cache(maxsize=None)
 def getListValue(listURL, code):
@@ -42,22 +41,8 @@ def addTender(ListTender):
         currentItem=ListTender[i]
         #check if id exists in T_GW_SPAIN_ADS
         FolderStatus= getListValue(currentItem['cac-place-ext:ContractFolderStatus']['cbc-place-ext:ContractFolderStatusCode']['@listURI'],currentItem['cac-place-ext:ContractFolderStatus']['cbc-place-ext:ContractFolderStatusCode']['#text']) 
-        if FolderStatus in Ads :
-            type = 'Ad'
-            cursor.execute(f"SELECT ID FROM T_GW_SPAIN_ADS WHERE ID=?",(currentItem['id'].replace("https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/", "")))
-            result=cursor.fetchone()
-            if result :
-                print("Ad existant for ID = ",(currentItem['id'].replace ("https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/", ""))) 
-                continue
-        elif FolderStatus in Contracts :
-            type= 'Contract'
-            cursor.execute(f"SELECT ID FROM T_GW_SPAIN_CONTRACTS WHERE ID=?",(currentItem['id'].replace("https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/", "")))
-            result=cursor.fetchone()
-            if result :
-                print("Contract already exist for ID = ",(currentItem['id'].replace ("https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/", ""))) 
-                continue
-        else :
-            raise Exception("Unknown status")
+     
+     
         #check if the number of Lots matches the number of awarded lots
         if type == 'Contract':
             if 'cac:TenderResult' not in currentItem['cac-place-ext:ContractFolderStatus'] :
