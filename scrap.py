@@ -223,7 +223,7 @@ def addTender(ListTender):
             else :
                 TenderResult=currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult']
                 if 'cac:WinningParty' in TenderResult :
-                    cursor.execute(f"INSERT INTO T_GW_SPAIN_CONTRACTS_LOTS ([E_ContractID],[N_LotID],[T_LotDescription],[N_LotPrice],[L_CPVS]) VALUES (?,?,?,?)",databaseRecord['I_EXT_ID'],1,currentItem['title'],databaseRecord['T_PRICE'] ,databaseRecord['MAIN_CPV'])
+                    cursor.execute(f"INSERT INTO T_GW_SPAIN_CONTRACTS_LOTS ([E_ContractID],[N_LotID],[T_LotDescription],[N_LotPrice],[L_CPVS]) VALUES (?,?,?,?,?)",databaseRecord['I_EXT_ID'],1,currentItem['title'],databaseRecord['T_PRICE'] ,databaseRecord['MAIN_CPV'])
                     cursor.commit()
                     cursor.execute(f"SELECT I_GW_LotID FROM T_GW_SPAIN_CONTRACTS_LOTS WHERE N_LotID = ? AND E_ContractID=? ", 1,databaseRecord['I_EXT_ID'])
                     SupplierRecord={}
