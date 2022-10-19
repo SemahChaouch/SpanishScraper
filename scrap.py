@@ -8,7 +8,6 @@ import xmltodict
 from multiprocessing import Process
 
 
-
 @lru_cache(maxsize=None)
 def getListValue(listURL, code):
     listResponse = requests.get(listURL)
@@ -166,10 +165,10 @@ def addTender(ListTender):
             databaseRecord["TECH_DOC_REF"]=currentItem['cac-place-ext:ContractFolderStatus']['cac:TechnicalDocumentReference']['cac:Attachment']['cac:ExternalReference']['cbc:URI']
         else:
             databaseRecord["TECH_DOC_REF"]=''
-        print(databaseRecord)
         if type == 'Ad':
             cursor.execute(f"INSERT INTO T_GW_SPAIN_ADS ( [id],[reference],[contractDesignation],[D_LastUpdate],[E_FolderID], [contractingFirstNif], [modelType], [cpvCount], [cpvFirst], [basePrice], [ambientCriteria], [deadline], [T_LegalDocLink], [T_TechDocLink]) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", list(databaseRecord.values()))
             cursor.commit()
+            print('ADDED')
         #print(databaseRecord)
 
 
