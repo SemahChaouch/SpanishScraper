@@ -1,13 +1,14 @@
-
+from calendar import c
+from enum import IntEnum
+import pyodbc
 from functools import lru_cache
 from re import T
 import requests
 import xmltodict
 from multiprocessing import Process
 
-#db=SQLServerConn(dbname='DT_EntryPoint')
-#cnxn= db.connection
-#cursor = cnxn.cursor()
+cnxn=pyodbc.connect('Driver={ODBC Driver 17 for SQL Server};Server=tcp:test1233332.database.windows.net,1433;Database=scraper12;Uid=Holiso;Pwd=Sentokizaru1;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30')
+cursor = cnxn.cursor()
 
 @lru_cache(maxsize=None)
 def getListValue(listURL, code):
@@ -31,7 +32,7 @@ def getCPV(listURL, code):
             return currentObj['Value'][2]['SimpleValue']
         i += 1
         
-Ads={'ANUNCIO PREVIO','EN PLAZO','PENDIENTE DE ADJUDICACION','ANUL','ANULADA'}
+Ads={'Anuncio Previo','EN PLAZO','PENDIENTE DE ADJUDICACION','ANUL','Anulada'}
 Contracts={'Adjudicada','Resuelta'}
 
 
@@ -39,11 +40,26 @@ def addTender(ListTender):
     for i in range(len(ListTender)):
         type = None
         currentItem=ListTender[i]
-        #check if id exists in T_GW_SPAIN_ADS
+#                  check if id exists in T_GW_SPAIN_ADS
         FolderStatus= getListValue(currentItem['cac-place-ext:ContractFolderStatus']['cbc-place-ext:ContractFolderStatusCode']['@listURI'],currentItem['cac-place-ext:ContractFolderStatus']['cbc-place-ext:ContractFolderStatusCode']['#text']) 
-     
-     
-        #check if the number of Lots matches the number of awarded lots
+        if FolderStatus in Ads :
+            type = 'Ad'
+            cursor.execute(f"SELECT ID FROM T_GW_SPAIN_ADS WHERE ID=?",(currentItem['id'].replace("https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/", "")))
+            result=cursor.fetchone()
+            if result :
+                print("Ad existant for ID = ",(currentItem['id'].replace ("https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/", ""))) 
+                continue
+        elif FolderStatus in Contracts :
+            type= 'Contract'
+            cursor.execute(f"SELECT ID FROM T_GW_SPAIN_CONTRACTS WHERE ID=?",(currentItem['id'].replace("https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/", "")))
+            result=cursor.fetchone()
+            if result :
+                print("Contract already exist for ID = ",(currentItem['id'].replace ("https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/", ""))) 
+                continue
+        else :
+            raise Exception("Unknown status")
+       
+#                 check if the number of Lots matches the number of awarded lots
         if type == 'Contract':
             if 'cac:TenderResult' not in currentItem['cac-place-ext:ContractFolderStatus'] :
                 print("No Awarded lots yet for Folder ID = ",(currentItem['id'].replace ("https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/", ""))) 
@@ -55,14 +71,15 @@ def addTender(ListTender):
                     continue
             
         databaseRecord={}
-        databaseRecord['I_EXT_ID'] =(currentItem['id'].replace ("https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/", ""))
+        databaseRecord['I_EXT_ID'] =int(currentItem['id'].replace ("https://contrataciondelestado.es/sindicacion/licitacionesPerfilContratante/", ""))
         databaseRecord['T_LINK'] = currentItem['link']['@href']
         databaseRecord['T_SUMMARY'] = currentItem['summary']['#text']
-        databaseRecord['T_TITLE'] = currentItem['title']
+        #databaseRecord['T_TITLE'] = currentItem['title']
         databaseRecord['D_EXT_UPDATED_DATE'] = currentItem['updated']
         databaseRecord['T_CONTRACT_FOLDER_ID'] = currentItem['cac-place-ext:ContractFolderStatus']['cbc:ContractFolderID']
-        databaseRecord['T_CONTACT_FOLDER_STATUS'] = getListValue(currentItem['cac-place-ext:ContractFolderStatus']['cbc-place-ext:ContractFolderStatusCode']['@listURI'],currentItem['cac-place-ext:ContractFolderStatus']['cbc-place-ext:ContractFolderStatusCode']['#text'])
+        #databaseRecord['T_CONTACT_FOLDER_STATUS'] = getListValue(currentItem['cac-place-ext:ContractFolderStatus']['cbc-place-ext:ContractFolderStatusCode']['@listURI'],currentItem['cac-place-ext:ContractFolderStatus']['cbc-place-ext:ContractFolderStatusCode']['#text'])
         
+
         MetaDataRecord={}
         MetaDataRecord['T_CONTRACTING_PARTY_TYPE'] = getListValue(currentItem['cac-place-ext:ContractFolderStatus']['cac-place-ext:LocatedContractingParty']['cbc:ContractingPartyTypeCode']['@listURI'],currentItem['cac-place-ext:ContractFolderStatus']['cac-place-ext:LocatedContractingParty']['cbc:ContractingPartyTypeCode']['#text']) 
         activities=[]
@@ -77,22 +94,28 @@ def addTender(ListTender):
         MetaDataRecord['T_CONTRACTING_PARTY_PROFILE_URL'] = currentItem['cac-place-ext:ContractFolderStatus']['cac-place-ext:LocatedContractingParty']['cbc:BuyerProfileURIID']
         
     
+
         party=currentItem['cac-place-ext:ContractFolderStatus']['cac-place-ext:LocatedContractingParty']['cac:Party']
         databaseRecord["T_CONTRACTING_PARTY"]=party['cac:PartyName']['cbc:Name']+' ,'+party['cac:PostalAddress']['cbc:CityName'] +' '+party['cac:PostalAddress']['cac:Country']['cbc:Name']
         
         Nif=party["cac:PartyIdentification"][0]['cbc:ID']['#text']
-        #cursor.execute(f"SELECT T_NIF FROM T_GOVWISE_ENTITIES WHERE T_NIF=?",Nif)
-        #result = cursor.fetchone()
-        #if not result :
-            #cursor.execute(f"INSERT INTO T_GOVWISE_ENTITIES ([T_NIF],[T_NAME],[F_Buyer],[F_Supplier]) VALUES (?,?)",Nif,party['cac:PartyName']['cbc:Name']+' ,'+party['cac:PostalAddress']['cbc:CityName'] +' '+party['cac:PostalAddress']['cac:Country']['cbc:Name'],True,False)
-            #cursor.commit()
+        cursor.execute(f"SELECT T_NIF FROM T_GOVWISE_ENTITIES WHERE T_NIF=?",Nif)
+        result = cursor.fetchone()
+        if not result :
+            cursor.execute(f"INSERT INTO T_GOVWISE_ENTITIES ([T_NIF],[T_NAME],[F_Buyer],[F_Supplier]) VALUES (?,?,?,?)",Nif,party['cac:PartyName']['cbc:Name']+' ,'+party['cac:PostalAddress']['cbc:CityName'] +' '+party['cac:PostalAddress']['cac:Country']['cbc:Name'],True,False)
+            cursor.commit()
         #PROJECT TYPE
-        #cursor.execute(f"SELECT I_ENTITY FROM T_GOVWISE_ENTITIES WHERE T_NIF=?",Nif)
-        #id=cursor.fetchone()[0]
-        #cursor.execute(f"INSERT INTO T_GOVWISE_ENTITIES_METADATA ([E_ENTITY],[T_NAME],[T_VALUE]) VALUES (?,?,?)",id,)
+        cursor.execute(f"SELECT I_ENTITY FROM T_GOVWISE_ENTITIES WHERE T_NIF=?",Nif)
+        id=cursor.fetchone()[0]
+        for key in MetaDataRecord :
+            cursor.execute(f"SELECT I_METADATA FROM T_GOVWISE_ENTITIES_METADATA WHERE T_NAME=?",key)
+            if not result :
+                cursor.execute(f"INSERT INTO T_GOVWISE_ENTITIES_METADATA ([E_ENTITY],[T_NAME],[T_VALUE]) VALUES (?,?,?)",id,key,MetaDataRecord[key])
+                cursor.commit()
         databaseRecord['T_PROCUREMENT_PROJECT_TYPE'] = getListValue(currentItem['cac-place-ext:ContractFolderStatus']['cac:ProcurementProject']['cbc:TypeCode']['@listURI'], currentItem['cac-place-ext:ContractFolderStatus']['cac:ProcurementProject']['cbc:TypeCode']['#text'])
-       
-        databaseRecord['T_PRICE']=0
+        
+
+
         cpvs=[]
         databaseRecord["CPV_COUNT"]=0
         #====================
@@ -108,68 +131,10 @@ def addTender(ListTender):
                 databaseRecord["CPV_COUNT"]=databaseRecord["CPV_COUNT"]+1
         else :
             databaseRecord['MAIN_CPV']=''
-        if type=='Ad':
-            databaseRecord['T_PRICE']=currentItem['cac-place-ext:ContractFolderStatus']['cac:ProcurementProject']['cac:BudgetAmount']['cbc:TaxExclusiveAmount']['#text']
 
 
-        if ('cac:ProcurementProjectLot' in currentItem['cac-place-ext:ContractFolderStatus']):
-            for i in range(len(currentItem['cac-place-ext:ContractFolderStatus']['cac:ProcurementProjectLot'])):
-                lot=currentItem['cac-place-ext:ContractFolderStatus']['cac:ProcurementProjectLot'][i]
-                lotRecord={}
-                databaseRecord["CPV_COUNT"]=databaseRecord["CPV_COUNT"]+1
-                lotRecord['E_AdID']= databaseRecord['I_EXT_ID']
-                lotRecord['N_LotID']=lot['cbc:ID']['#text']
-                lotRecord['T_LotDescription']=lot['cac:ProcurementProject']['cbc:Name']
-                if type == 'Contract':
-                    if isinstance(currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult'],list) and 'cac:LegalMonetaryTotal' in currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult'][i]:
-                        lotRecord['N_LotPrice']=float(currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult'][i]['cac:AwardedTenderedProject']['cac:LegalMonetaryTotal']['cbc:PayableAmount']['#text'])
-                        databaseRecord['T_PRICE']=databaseRecord['T_PRICE']+lotRecord['N_LotPrice']
-                else :
-                    lotRecord['N_LotPrice']=(lot['cac:ProcurementProject']['cac:BudgetAmount']['cbc:TotalAmount']['#text'])
-                lotcpv=[]
-                if isinstance(lot['cac:ProcurementProject']['cac:RequiredCommodityClassification'],list) :
-                    for j in range(len(lot['cac:ProcurementProject']['cac:RequiredCommodityClassification'])):
-                        lotcpv.append(getCPV(lot['cac:ProcurementProject']['cac:RequiredCommodityClassification'][j]['cbc:ItemClassificationCode']['@listURI'],lot['cac:ProcurementProject']['cac:RequiredCommodityClassification'][j]['cbc:ItemClassificationCode']['#text'])+' '+ lot['cac:ProcurementProject']['cac:RequiredCommodityClassification'][j]['cbc:ItemClassificationCode']['#text'])
-                    lotRecord['L_CPVs']=';'.join(lotcpv) 
-                else :
-                    lotRecord['L_CPVs']=getCPV(lot['cac:ProcurementProject']['cac:RequiredCommodityClassification']['cbc:ItemClassificationCode']['@listURI'],lot['cac:ProcurementProject']['cac:RequiredCommodityClassification']['cbc:ItemClassificationCode']['#text'])+' '+lot['cac:ProcurementProject']['cac:RequiredCommodityClassification']['cbc:ItemClassificationCode']['#text']
-                print(lotRecord)
-                #cursor.execute(f"INSERT INTO SPAIN_TEST_LOT ([E_AdID],[N_LotID],[T_LotDescription],[N_LotPrice],[L_CPVS]) VALUES (?,?,?,?,?)", list(lotRecord.values())[0:5])
-                #cursor.commit()
+        databaseRecord['T_PRICE']=currentItem['cac-place-ext:ContractFolderStatus']['cac:ProcurementProject']['cac:BudgetAmount']['cbc:TaxExclusiveAmount']['#text']
 
-        
-        if ('cac:TenderResult' in currentItem['cac-place-ext:ContractFolderStatus']):
-            if isinstance(currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult'],list):
-                for i in range(len(currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult'])):
-                    TenderResult=currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult'][i]
-                    
-                    #cursor.execute(f"SELECT I_GW_LotID FROM T_GW_SPAIN_CONTRACTS_LOTS WHERE N_LotID = ?", i+1)
-                    #SupplierRecord['E_LotID']=cursor.fetchone()[0]
-                    if isinstance(TenderResult['cac:WinningParty'],list):
-                        for z in range(len(TenderResult['cac:WinningParty']['cac:PartyName'])):
-                            SupplierRecord={}
-                            SupplierRecord['E_AdID']= databaseRecord['I_EXT_ID']
-                            SupplierRecord['T_SupplierVat']=TenderResult['cac:WinningParty']['cac:PartyIdentification']['cbc:ID']['#text']
-                            SupplierRecord['T_SupplierName']=TenderResult['cac:WinningParty']['cac:PartyName'][z]['cbc:Name']
-                            #cursor.execute(f"INSERT INTO T_GW_SPAIN_CONTRACTS_LOT_SUPPLIERS ([E_AdID],[E_LotID],[T_SupplierVat],[T_SupplierName]) VALUES (?,?,?,?)", list(SupplierRecord.values())[0:4])
-                    else :
-                            SupplierRecord={}
-                            SupplierRecord['E_AdID']= databaseRecord['I_EXT_ID']
-                            SupplierRecord['T_SupplierVat']=TenderResult['cac:WinningParty']['cac:PartyIdentification']['cbc:ID']['#text']
-                            SupplierRecord['T_SupplierName']=TenderResult['cac:WinningParty']['cac:PartyName']['cbc:Name']
-                            #cursor.execute(f"INSERT INTO T_GW_SPAIN_CONTRACTS_LOT_SUPPLIERS ([E_AdID],[E_LotID],[T_SupplierVat],[T_SupplierName]) VALUES (?,?,?,?)", list(SupplierRecord.values())[0:4])
-            else :
-                TenderResult=currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult']
-                SupplierRecord={}
-                SupplierRecord['E_AdID']= databaseRecord['I_EXT_ID']
-                if 'cac:WinningParty' in TenderResult :
-                    SupplierRecord['T_SupplierVat']=TenderResult['cac:WinningParty']['cac:PartyIdentification']['cbc:ID']['#text']
-                    SupplierRecord['T_SupplierName']=TenderResult['cac:WinningParty']['cac:PartyName']['cbc:Name']
-                else :
-                    SupplierRecord['T_SupplierVat']='N/A'
-                    SupplierRecord['T_SupplierName']='N/A'
-
-                #cursor.execute(f"INSERT INTO T_GW_SPAIN_CONTRACTS_LOT_SUPPLIERS ([E_AdID],[E_LotID],[T_SupplierVat],[T_SupplierName]) VALUES (?,?,?,?)", list(SupplierRecord.values())[0:4])
         #CRITERIA CHECK LIST
         criteria=[]
         if 'cac:AwardingTerms' in currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderingTerms']:
@@ -182,7 +147,7 @@ def addTender(ListTender):
         else :
             databaseRecord["AWARDING_CRITERIA"]=''
         #PROCEDURE
-        databaseRecord["PROCEDURE"]=getListValue(currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderingProcess']['cbc:ProcedureCode']['@listURI'],currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderingProcess']['cbc:ProcedureCode']['#text'])
+        #databaseRecord["PROCEDURE"]=getListValue(currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderingProcess']['cbc:ProcedureCode']['@listURI'],currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderingProcess']['cbc:ProcedureCode']['#text'])
 
         #DEADLINE
         if 'cac:TenderSubmissionDeadlinePeriod' in currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderingProcess']:
@@ -200,14 +165,18 @@ def addTender(ListTender):
             databaseRecord["TECH_DOC_REF"]=currentItem['cac-place-ext:ContractFolderStatus']['cac:TechnicalDocumentReference']['cac:Attachment']['cac:ExternalReference']['cbc:URI']
         else:
             databaseRecord["TECH_DOC_REF"]=''
-        #if databaseRecord["T_CONTACT_FOLDER_STATUS"]!="Adjudicada":
-        #    cursor.execute(f"INSERT INTO SPAIN_TEST ( [I_EXT_ID],[T_LINK],[T_SUMMARY],[T_TITLE],[D_EXT_UPDATED_DATE], [T_CONTRACT_FOLDER_ID], [T_CONTACT_FOLDER_STATUS], [T_CONTRACTING_PARTY_TYPE], [T_CONTRACTING_PARTY_ACTIVITY_CODE], [T_CONTRACTING_PARTY_PROFILE_URL], [T_CONTRACTING_PARTY], [T_PROCUREMENT_PROJECT_TYPE], [T_PRICE], [CPV_COUNT], [MAIN_CPV], [AWARDING_CRITERIA], [PROCEDUR], [DEADLINE], [LEGAL_DOC_REF], [TECH_DOC_REF]) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", list(databaseRecord.values())[0:21])
-        #    cursor.commit()
-        #else :
-        #    cursor.execute(f"INSERT INTO SPAIN_TEST_ADJ ( [I_EXT_ID],[T_LINK],[T_SUMMARY],[T_TITLE],[D_EXT_UPDATED_DATE], [T_CONTRACT_FOLDER_ID], [T_CONTACT_FOLDER_STATUS], [T_CONTRACTING_PARTY_TYPE], [T_CONTRACTING_PARTY_ACTIVITY_CODE], [T_CONTRACTING_PARTY_PROFILE_URL], [T_CONTRACTING_PARTY], [T_PROCUREMENT_PROJECT_TYPE], [T_PRICE], [CPV_COUNT], [MAIN_CPV], [AWARDING_CRITERIA], [PROCEDUR], [DEADLINE], [LEGAL_DOC_REF], [TECH_DOC_REF]) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", list(databaseRecord.values())[0:21])
-        #    cursor.commit()
         print(databaseRecord)
-        print(MetaDataRecord)
+        if type == 'Ad':
+            cursor.execute(f"INSERT INTO T_GW_SPAIN_ADS ( [id],[reference],[contractDesignation],[D_LastUpdate],[E_FolderID], [contractingFirstNif], [modelType], [cpvCount], [cpvFirst], [basePrice], [ambientCriteria], [deadline], [T_LegalDocLink], [T_TechDocLink]) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", list(databaseRecord.values()))
+            cursor.commit()
+        #print(databaseRecord)
+
+
+        
+
+
+
+
 if __name__ == '__main__':   
     url = "https://contrataciondelestado.es/sindicacion/sindicacion_643/licitacionesPerfilesContratanteCompleto3.atom"
     z=0
