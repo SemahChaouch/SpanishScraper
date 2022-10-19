@@ -199,7 +199,11 @@ def addTender(ListTender):
                  if type=='Contract':
                     cursor.execute(f"INSERT INTO T_GW_SPAIN_CONTRACTS_LOTS ([E_ContractID],[N_LotID],[T_LotDescription],[N_LotPrice],[L_CPVS]) VALUES (?,?,?,?,?)", list(lotRecord.values()))
                     cursor.commit()
-
+                    print('ADDED LOT')
+                 else :
+                    cursor.execute(f"INSERT INTO T_GW_SPAIN_ADS_LOTS ([E_AdID],[N_LotID],[T_LotDescription],[N_LotPrice],[L_CPVS]) VALUES (?,?,?,?,?)", list(lotRecord.values()))
+                    cursor.commit()
+                    print('ADDED LOT')
 
 
 
@@ -215,10 +219,11 @@ def addTender(ListTender):
                     SupplierRecord['T_SupplierName']=TenderResult['cac:WinningParty']['cac:PartyName']['cbc:Name']
                     cursor.execute(f"INSERT INTO T_GW_SPAIN_CONTRACTS_LOT_SUPPLIERS ([E_ContractID],[E_LotID],[T_SupplierVat],[T_SupplierName]) VALUES (?,?,?,?)", list(SupplierRecord.values())[0:4])
                     cursor.commit()
+                    print('ADDED SUPPLIER LOT')
             else :
                 TenderResult=currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult']
                 if 'cac:WinningParty' in TenderResult :
-                    cursor.execute(f"INSERT INTO T_GW_SPAIN_CONTRACTS_LOTS ([E_ContractID],[N_LotID]) VALUES (?,?)",databaseRecord['I_EXT_ID'],1 )
+                    cursor.execute(f"INSERT INTO T_GW_SPAIN_CONTRACTS_LOTS ([E_ContractID],[N_LotID],[T_LotDescription],[N_LotPrice],[L_CPVS]) VALUES (?,?,?,?)",databaseRecord['I_EXT_ID'],1,currentItem['title'],databaseRecord['T_PRICE'] ,databaseRecord['MAIN_CPV'])
                     cursor.commit()
                     cursor.execute(f"SELECT I_GW_LotID FROM T_GW_SPAIN_CONTRACTS_LOTS WHERE N_LotID = ? AND E_ContractID=? ", 1,databaseRecord['I_EXT_ID'])
                     SupplierRecord={}
@@ -228,6 +233,7 @@ def addTender(ListTender):
                     SupplierRecord['T_SupplierName']=TenderResult['cac:WinningParty']['cac:PartyName']['cbc:Name']
                     cursor.execute(f"INSERT INTO T_GW_SPAIN_CONTRACTS_LOT_SUPPLIERS ([E_ContractID],[E_LotID],[T_SupplierVat],[T_SupplierName]) VALUES (?,?,?,?)", list(SupplierRecord.values())[0:4])
                     cursor.commit()
+                    print('ADDED SUPPLIER LOT')
 
         
 
