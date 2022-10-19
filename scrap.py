@@ -176,6 +176,56 @@ def addTender(ListTender):
             cursor.commit()
             print('CONTRACT added')
         #print(databaseRecord)
+        if ('cac:ProcurementProjectLot' in currentItem['cac-place-ext:ContractFolderStatus']):
+             for i in range(len(currentItem['cac-place-ext:ContractFolderStatus']['cac:ProcurementProjectLot'])):
+                 lot=currentItem['cac-place-ext:ContractFolderStatus']['cac:ProcurementProjectLot'][i]
+                 lotRecord={}
+                 lotRecord['E_AdID']= databaseRecord['I_EXT_ID']
+                 lotRecord['N_LotID']=lot['cbc:ID']['#text']
+                 lotRecord['T_LotDescription']=lot['cac:ProcurementProject']['cbc:Name']
+                 if type == 'Contract'and isinstance(currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult'],list) and 'cac:LegalMonetaryTotal' in currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult'][i]:
+                    lotRecord['N_LotPrice']=float(currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult'][i]['cac:AwardedTenderedProject']['cac:LegalMonetaryTotal']['cbc:PayableAmount']['#text'])
+                    databaseRecord['T_PRICE']=databaseRecord['T_PRICE']+lotRecord['N_LotPrice']
+                 else :
+                     lotRecord['N_LotPrice']=(lot['cac:ProcurementProject']['cac:BudgetAmount']['cbc:TotalAmount']['#text'])
+                     databaseRecord['T_PRICE']=databaseRecord['T_PRICE']+lotRecord['N_LotPrice']
+                 lotcpv=[]
+                 if isinstance(lot['cac:ProcurementProject']['cac:RequiredCommodityClassification'],list) :
+                     for j in range(len(lot['cac:ProcurementProject']['cac:RequiredCommodityClassification'])):
+                         lotcpv.append(getCPV(lot['cac:ProcurementProject']['cac:RequiredCommodityClassification'][j]['cbc:ItemClassificationCode']['@listURI'],lot['cac:ProcurementProject']['cac:RequiredCommodityClassification'][j]['cbc:ItemClassificationCode']['#text'])+' '+ lot['cac:ProcurementProject']['cac:RequiredCommodityClassification'][j]['cbc:ItemClassificationCode']['#text'])
+                     lotRecord['L_CPVs']=';'.join(lotcpv) 
+                 else :
+                     lotRecord['L_CPVs']=getCPV(lot['cac:ProcurementProject']['cac:RequiredCommodityClassification']['cbc:ItemClassificationCode']['@listURI'],lot['cac:ProcurementProject']['cac:RequiredCommodityClassification']['cbc:ItemClassificationCode']['#text'])+' '+lot['cac:ProcurementProject']['cac:RequiredCommodityClassification']['cbc:ItemClassificationCode']['#text']
+                 if type=='Contract':
+                    cursor.execute(f"INSERT INTO T_GW_SPAIN_CONTRACTS_LOTS ([E_ContractID],[N_LotID],[T_LotDescription],[N_LotPrice],[L_CPVS]) VALUES (?,?,?,?,?)", list(lotRecord.values()))
+                    cursor.commit()
+
+
+
+
+        if ('cac:TenderResult' in currentItem['cac-place-ext:ContractFolderStatus']):
+            if isinstance(currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult'],list):
+                 for i in range(len(currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult'])):
+                    TenderResult=currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult'][i]
+                    cursor.execute(f"SELECT I_GW_LotID FROM T_GW_SPAIN_CONTRACTS_LOTS WHERE N_LotID = ? AND E_ContractID=? ", i+1,databaseRecord['I_EXT_ID'])
+                    SupplierRecord={}
+                    SupplierRecord['E_ContractID']= databaseRecord['I_EXT_ID']
+                    SupplierRecord['E_LotID']=cursor.fetchone()[0]
+                    SupplierRecord['T_SupplierVat']=TenderResult['cac:WinningParty']['cac:PartyIdentification']['cbc:ID']['#text']
+                    SupplierRecord['T_SupplierName']=TenderResult['cac:WinningParty']['cac:PartyName']['cbc:Name']
+                    cursor.execute(f"INSERT INTO T_GW_SPAIN_CONTRACTS_LOT_SUPPLIERS ([E_ContractID],[E_LotID],[T_SupplierVat],[T_SupplierName]) VALUES (?,?,?,?)", list(SupplierRecord.values())[0:4])
+            else :
+                if 'cac:WinningParty' in TenderResult :
+                    cursor.execute(f"INSERT INTO T_GW_SPAIN_CONTRACTS_LOTS ([E_ContractID],[N_LotID]) VALUES (?,?)",databaseRecord['I_EXT_ID'],1 )
+                    cursor.commit()
+                    TenderResult=currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult']
+                    cursor.execute(f"SELECT I_GW_LotID FROM T_GW_SPAIN_CONTRACTS_LOTS WHERE N_LotID = ? AND E_ContractID=? ", 1,databaseRecord['I_EXT_ID'])
+                    SupplierRecord={}
+                    SupplierRecord['E_ContractID']= databaseRecord['I_EXT_ID']
+                    SupplierRecord['E_LotID']=cursor.fetchone()[0]
+                    SupplierRecord['T_SupplierVat']=TenderResult['cac:WinningParty']['cac:PartyIdentification']['cbc:ID']['#text']
+                    SupplierRecord['T_SupplierName']=TenderResult['cac:WinningParty']['cac:PartyName']['cbc:Name']
+                    cursor.execute(f"INSERT INTO T_GW_SPAIN_CONTRACTS_LOT_SUPPLIERS ([E_ContractID],[E_LotID],[T_SupplierVat],[T_SupplierName]) VALUES (?,?,?,?)", list(SupplierRecord.values())[0:4])
 
 
         
