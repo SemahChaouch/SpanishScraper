@@ -186,10 +186,10 @@ def addTender(ListTender):
                  lotRecord['T_LotDescription']=lot['cac:ProcurementProject']['cbc:Name']
                  if type == 'Contract'and isinstance(currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult'],list) and 'cac:LegalMonetaryTotal' in currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult'][i]:
                     lotRecord['N_LotPrice']=float(currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult'][i]['cac:AwardedTenderedProject']['cac:LegalMonetaryTotal']['cbc:PayableAmount']['#text'])
-                    databaseRecord['T_PRICE']=databaseRecord['T_PRICE']+lotRecord['N_LotPrice']
+                    databaseRecord['T_PRICE']=float(databaseRecord['T_PRICE'])+lotRecord['N_LotPrice']
                  else :
                      lotRecord['N_LotPrice']=float(lot['cac:ProcurementProject']['cac:BudgetAmount']['cbc:TotalAmount']['#text'])
-                     databaseRecord['T_PRICE']=databaseRecord['T_PRICE']+float(lotRecord['N_LotPrice'])
+                     databaseRecord['T_PRICE']=float(databaseRecord['T_PRICE'])+(lotRecord['N_LotPrice'])
                  lotcpv=[]
                  if isinstance(lot['cac:ProcurementProject']['cac:RequiredCommodityClassification'],list) :
                      for j in range(len(lot['cac:ProcurementProject']['cac:RequiredCommodityClassification'])):
