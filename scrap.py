@@ -1,5 +1,6 @@
 from calendar import c
 from enum import IntEnum
+from pickletools import floatnl
 import pyodbc
 from functools import lru_cache
 from re import T
@@ -187,7 +188,7 @@ def addTender(ListTender):
                     lotRecord['N_LotPrice']=float(currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult'][i]['cac:AwardedTenderedProject']['cac:LegalMonetaryTotal']['cbc:PayableAmount']['#text'])
                     databaseRecord['T_PRICE']=databaseRecord['T_PRICE']+lotRecord['N_LotPrice']
                  else :
-                     lotRecord['N_LotPrice']=(lot['cac:ProcurementProject']['cac:BudgetAmount']['cbc:TotalAmount']['#text'])
+                     lotRecord['N_LotPrice']=float(lot['cac:ProcurementProject']['cac:BudgetAmount']['cbc:TotalAmount']['#text'])
                      databaseRecord['T_PRICE']=databaseRecord['T_PRICE']+lotRecord['N_LotPrice']
                  lotcpv=[]
                  if isinstance(lot['cac:ProcurementProject']['cac:RequiredCommodityClassification'],list) :
@@ -223,7 +224,7 @@ def addTender(ListTender):
             else :
                 TenderResult=currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult']
                 if 'cac:WinningParty' in TenderResult :
-                    cursor.execute(f"INSERT INTO T_GW_SPAIN_CONTRACTS_LOTS ([E_ContractID],[N_LotID],[T_LotDescription],[N_LotPrice],[L_CPVS]) VALUES (?,?,?,?,?)",databaseRecord['I_EXT_ID'],1,currentItem['title'],databaseRecord['T_PRICE'] ,databaseRecord['MAIN_CPV'])
+                    cursor.execute(f"INSERT INTO T_GW_SPAIN_CONTRACTS_LOTS ([E_ContractID],[N_LotID],[T_LotDescription],[N_LotPrice],[L_CPVS]) VALUES (?,?,?,?,?)",databaseRecord['I_EXT_ID'],1,currentItem['title'],float(databaseRecord['T_PRICE']) ,databaseRecord['MAIN_CPV'])
                     cursor.commit()
                     cursor.execute(f"SELECT I_GW_LotID FROM T_GW_SPAIN_CONTRACTS_LOTS WHERE N_LotID = ? AND E_ContractID=? ", 1,databaseRecord['I_EXT_ID'])
                     SupplierRecord={}
