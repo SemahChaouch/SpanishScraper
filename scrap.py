@@ -7,8 +7,7 @@ import requests
 import xmltodict
 from multiprocessing import Process
 
-cnxn=pyodbc.connect('Driver={ODBC Driver 17 for SQL Server};Server=tcp:test1233332.database.windows.net,1433;Database=scraper12;Uid=Holiso;Pwd=Sentokizaru1;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30')
-cursor = cnxn.cursor()
+
 
 @lru_cache(maxsize=None)
 def getListValue(listURL, code):
@@ -37,6 +36,8 @@ Contracts={'Adjudicada','Resuelta'}
 
 
 def addTender(ListTender):
+    cnxn=pyodbc.connect('Driver={ODBC Driver 17 for SQL Server};Server=tcp:test1233332.database.windows.net,1433;Database=scraper12;Uid=Holiso;Pwd=Sentokizaru1;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30')
+    cursor = cnxn.cursor()
     for i in range(len(ListTender)):
         type = None
         currentItem=ListTender[i]
