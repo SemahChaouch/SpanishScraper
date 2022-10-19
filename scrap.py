@@ -189,7 +189,7 @@ def addTender(ListTender):
                     databaseRecord['T_PRICE']=databaseRecord['T_PRICE']+lotRecord['N_LotPrice']
                  else :
                      lotRecord['N_LotPrice']=float(lot['cac:ProcurementProject']['cac:BudgetAmount']['cbc:TotalAmount']['#text'])
-                     databaseRecord['T_PRICE']=databaseRecord['T_PRICE']+lotRecord['N_LotPrice']
+                     databaseRecord['T_PRICE']=databaseRecord['T_PRICE']+float(lotRecord['N_LotPrice'])
                  lotcpv=[]
                  if isinstance(lot['cac:ProcurementProject']['cac:RequiredCommodityClassification'],list) :
                      for j in range(len(lot['cac:ProcurementProject']['cac:RequiredCommodityClassification'])):
