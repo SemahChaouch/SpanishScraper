@@ -147,7 +147,7 @@ def addTender(ListTender):
         else :
             databaseRecord["AWARDING_CRITERIA"]=''
         #PROCEDURE
-        #databaseRecord["PROCEDURE"]=getListValue(currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderingProcess']['cbc:ProcedureCode']['@listURI'],currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderingProcess']['cbc:ProcedureCode']['#text'])
+        databaseRecord["PROCEDURE"]=getListValue(currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderingProcess']['cbc:ProcedureCode']['@listURI'],currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderingProcess']['cbc:ProcedureCode']['#text'])
 
         #DEADLINE
         if 'cac:TenderSubmissionDeadlinePeriod' in currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderingProcess']:
@@ -166,9 +166,15 @@ def addTender(ListTender):
         else:
             databaseRecord["TECH_DOC_REF"]=''
         if type == 'Ad':
+            databaseRecord.pop('DEADLINE')
             cursor.execute(f"INSERT INTO T_GW_SPAIN_ADS ( [id],[reference],[contractDesignation],[D_LastUpdate],[E_FolderID], [contractingFirstNif], [modelType], [cpvCount], [cpvFirst], [basePrice], [ambientCriteria], [deadline], [T_LegalDocLink], [T_TechDocLink]) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", list(databaseRecord.values()))
             cursor.commit()
-            print('ADDED')
+            print(' AD added ')
+        else :
+            databaseRecord.pop('DEADLINE')
+            cursor.execute(f"INSERT INTO T_GW_SPAIN_CONTRACTS ( [id],[reference],[objectBriefDescription],[publicationDate],[E_FolderID], [contractingFirstNif], [contractFundamentationType], [cpvCount], [cpvFirst], [parsedPrice], [ambientCriteria], [ContractingProcedureType], [T_LegalDocLink], [T_TechDocLink]) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", list(databaseRecord.values()))
+            cursor.commit()
+            print('CONTRACT added')
         #print(databaseRecord)
 
 
