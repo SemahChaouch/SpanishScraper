@@ -213,14 +213,18 @@ def addTender(ListTender):
                  for i in range(len(currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult'])):
                     TenderResult=currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult'][i]
                     cursor.execute(f"SELECT I_GW_LotID FROM T_GW_SPAIN_CONTRACTS_LOTS WHERE N_LotID = ? AND E_ContractID=? ", i+1,databaseRecord['I_EXT_ID'])
-                    SupplierRecord={}
-                    SupplierRecord['E_ContractID']= databaseRecord['I_EXT_ID']
-                    SupplierRecord['E_LotID']=cursor.fetchone()[0]
-                    SupplierRecord['T_SupplierVat']=TenderResult['cac:WinningParty']['cac:PartyIdentification']['cbc:ID']['#text']
-                    SupplierRecord['T_SupplierName']=TenderResult['cac:WinningParty']['cac:PartyName']['cbc:Name']
-                    cursor.execute(f"INSERT INTO T_GW_SPAIN_CONTRACTS_LOT_SUPPLIERS ([E_ContractID],[E_LotID],[T_SupplierVat],[T_SupplierName]) VALUES (?,?,?,?)", list(SupplierRecord.values())[0:4])
-                    cursor.commit()
-                    print('ADDED SUPPLIER LOT')
+                    if 'cac:WinningParty' in TenderResult :
+                        SupplierRecord={}
+                        SupplierRecord['E_ContractID']= databaseRecord['I_EXT_ID']
+                        if cursor:
+                            SupplierRecord['E_LotID']=cursor.fetchone()[0]
+                        else :
+                            SupplierRecord['E_LotID']='N/A'
+                        SupplierRecord['T_SupplierVat']=TenderResult['cac:WinningParty']['cac:PartyIdentification']['cbc:ID']['#text']
+                        SupplierRecord['T_SupplierName']=TenderResult['cac:WinningParty']['cac:PartyName']['cbc:Name']
+                        cursor.execute(f"INSERT INTO T_GW_SPAIN_CONTRACTS_LOT_SUPPLIERS ([E_ContractID],[E_LotID],[T_SupplierVat],[T_SupplierName]) VALUES (?,?,?,?)", list(SupplierRecord.values())[0:4])
+                        cursor.commit()
+                        print('ADDED SUPPLIER LOT')
             else :
                 TenderResult=currentItem['cac-place-ext:ContractFolderStatus']['cac:TenderResult']
                 if 'cac:WinningParty' in TenderResult :
